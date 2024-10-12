@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>库存列表</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0 auto;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    @media (max-width: 600px) {
+      table {
+        width: 100%;
+      }
+
+      th, td {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      button {
+        width: 100%;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+<h1>仓库库存列表</h1>
+<table>
+  <thead>
+  <tr>
+    <th>仓库名称</th>
+    <th>产品名称</th>
+    <th>库存数量</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="item : ${inventoryList}">
+    <td th:text="${item.warehouseName}">仓库名称</td>
+    <td th:text="${item.productName}">产品名称</td>
+    <td th:text="${item.quantity}">库存数量</td>
+  </tr>
+  </tbody>
+</table>
+<button type="button" onclick="history.back()">返回上一页</button>
+</body>
+</html>

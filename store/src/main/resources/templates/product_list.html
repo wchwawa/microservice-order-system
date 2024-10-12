@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>商品列表</title>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f8f9fa;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #333;
+      font-size: 28px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    li {
+      background-color: #fff;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    a {
+      text-decoration: none;
+      color: #3498db;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .price {
+      font-weight: bold;
+      color: #e74c3c;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .action-buttons {
+      max-width: 600px;
+      margin: 20px auto;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    form {
+      display: inline;
+    }
+  </style>
+</head>
+<body>
+<h1>商品列表</h1>
+<ul>
+  <li th:each="product : ${products}">
+    <a th:href="@{'/products/' + ${product.id}}"
+       th:text="${product.name}">商品名称</a>
+    - ¥<span class="price" th:text="${product.price}">0.00</span>
+  </li>
+</ul>
+
+<div class="action-buttons">
+  <a th:href="@{/inventory}">
+    <button type="button">查看库存</button>
+  </a>
+
+  <form th:action="@{/logout}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <button type="submit">注销</button>
+  </form>
+</div>
+</body>
+</html>

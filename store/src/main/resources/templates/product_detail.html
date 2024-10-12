@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>商品详情</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .price {
+            font-size: 22px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        form {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 5px;
+            font-size: 16px;
+            margin-right: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 th:text="${product.name}">商品名称</h1>
+    <p th:text="${product.description}">商品描述</p>
+    <p>价格：<span class="price">¥<span th:text="${product.price}">0.00</span></span></p>
+
+    <form th:action="@{/orders}" method="post">
+        <input type="hidden" name="productId" th:value="${product.id}"/>
+        <label for="quantity">数量：</label>
+        <input type="number" name="quantity" id="quantity" min="1" value="1"/>
+        <button type="submit">下单</button>
+    </form>
+
+    <a th:href="@{/products}">返回商品列表</a>
+</div>
+</body>
+</html>
