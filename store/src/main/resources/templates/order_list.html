@@ -172,7 +172,7 @@
       <p>Total Amount: $<span th:text="${#numbers.formatDecimal(order.totalAmount, 1, 2)}">0.00</span></p>
       <p>Status: <span th:text="${order.status}">Unknown</span></p>
       <p>Order Date: <span th:text="${#dates.format(order.createdAt, 'yyyy-MM-dd HH:mm:ss')}">Date</span></p>
-      <form th:action="@{/orders/cancel}" method="post" th:if="${order.status == 'Paid'}">
+      <form th:action="@{/orders/cancel}" method="post" th:if="${order.status == 'paid'}">
         <input type="hidden" name="orderId" th:value="${order.id}"/>
         <button type="submit" class="btn">Cancel Order</button>
       </form>
