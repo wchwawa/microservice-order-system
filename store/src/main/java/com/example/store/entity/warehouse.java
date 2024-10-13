@@ -5,7 +5,6 @@ public class warehouse {
     private String name;
     private String location;
 
-    // Getter 和 Setter 方法
     public Long getId() {
         return id;
     }

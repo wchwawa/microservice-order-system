@@ -18,5 +18,4 @@ public interface productmapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insertProduct(product product);
 
-    // 其他方法（如更新商品信息等）
 }

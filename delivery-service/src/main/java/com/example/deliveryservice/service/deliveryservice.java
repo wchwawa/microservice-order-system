@@ -1,15 +1,17 @@
 package com.example.deliveryservice.service;
 
+import com.example.deliveryservice.model.MailRequest;
 import com.example.deliveryservice.model.deliveryrequest;
 import com.example.deliveryservice.model.deliverystatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-// 引入 RestTemplate 以调用 Mail Service
+// service communication using RestTemplate
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import java.util.Random;
 
 import java.util.concurrent.TimeUnit;
 
@@ -17,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 public class deliveryservice {
 
     private static final Logger logger = LoggerFactory.getLogger(deliveryservice.class);
-
+    private final Random random = new Random();
     @Autowired
     private RestTemplate restTemplate;
 
@@ -31,45 +33,47 @@ public class deliveryservice {
 
     public void processDelivery(deliveryrequest request) {
         try {
-            // 1. 送货请求已接收
+            // 1. send email to customer
             notifyStore(request.getOrderId(), deliverystatus.RECEIVED);
-            sendEmail(request.getCustomerEmail(), "订单已接收",
-                    "您的订单 " + request.getOrderId() + " 已接收，我们将尽快为您发货。");
+            sendEmail(request.getCustomerEmail(), "order received",
+                    "your order" + request.getOrderId() + " order received, we will process it soon.");
 
-            // 模拟从仓库取货
+            // mocking order picking
             TimeUnit.SECONDS.sleep(2);
             notifyStore(request.getOrderId(), deliverystatus.PICKED_UP);
-            sendEmail(request.getCustomerEmail(), "订单已取货",
-                    "您的订单 " + request.getOrderId() + " 已从仓库取货，正在运输途中。");
+            sendEmail(request.getCustomerEmail(), "order picked up",
+                    "your order" + request.getOrderId() + " has been picked up and is on its way.");
 
-            // 模拟运输中
+            // mocking order in transit
             TimeUnit.SECONDS.sleep(2);
             notifyStore(request.getOrderId(), deliverystatus.IN_TRANSIT);
-            sendEmail(request.getCustomerEmail(), "订单运输中",
-                    "您的订单 " + request.getOrderId() + " 正在运输途中，预计即将到达。");
-
-            // 模拟送达完成
+            sendEmail(request.getCustomerEmail(), "order in transit",
+                    "hanged tight! your order" + request.getOrderId() + " is on its way!");
+            if (random.nextDouble() < 0.30){
+                throw new InterruptedException("order lost during transit");
+            }
+                // mocking order delivered
             TimeUnit.SECONDS.sleep(2);
             notifyStore(request.getOrderId(), deliverystatus.DELIVERED);
-            sendEmail(request.getCustomerEmail(), "订单已送达",
-                    "您的订单 " + request.getOrderId() + " 已成功送达，感谢您的购买！");
+            sendEmail(request.getCustomerEmail(), "order delivered",
+                    "your order" + request.getOrderId() + " has been delivered, thank you for your purchase!");
         } catch (InterruptedException e) {
-            logger.error("送货处理过程中发生异常: {}", e.getMessage());
+            logger.error("there was an error processing the order: {}", e.getMessage());
             notifyStore(request.getOrderId(), deliverystatus.FAILED);
-            sendEmail(request.getCustomerEmail(), "订单处理失败",
-                    "抱歉，您的订单 " + request.getOrderId() + " 处理过程中出现问题，订单已被取消。");
+            sendEmail(request.getCustomerEmail(), "order processing failed",
+                    "sorry，your order " + request.getOrderId() + "processing is failed, the order has been cancelled.");
         } catch (Exception e) {
-            logger.error("送货处理过程中发生未知异常: {}", e.getMessage());
+            logger.error("unknown error on order: {}", e.getMessage());
             notifyStore(request.getOrderId(), deliverystatus.FAILED);
-            sendEmail(request.getCustomerEmail(), "订单处理失败",
-                    "抱歉，您的订单 " + request.getOrderId() + " 处理过程中出现问题，订单已被取消。");
+            sendEmail(request.getCustomerEmail(), "order processing failed",
+                    "sorry，your order " + request.getOrderId() + "processing is failed, the order has been cancelled.");
         }
     }
 
     private void notifyStore(String orderId, deliverystatus status) {
-        // 由于具体 Store 服务的 API 未知，这里仅打印日志
-        String message = "通知 Store：订单 " + orderId + " 状态更新为 " + status;
+        String message = "notify Store：order " + orderId + " status is updated to " + status;
         logger.info(message);
+        // send message via message queue to store service
         rabbitTemplate.convertAndSend("order.status.to.store", message);
     }
 
@@ -77,46 +81,14 @@ public class deliveryservice {
 
         String emailApiUrl = emailServiceUrl + "/emails/send";
 
-        // 创建邮件请求对象
-        deliveryservice.mailrequest mailRequest = new deliveryservice.mailrequest();
+        // create a MailRequest object
+        MailRequest mailRequest = new MailRequest();
         mailRequest.setRecipient(recipient);
         mailRequest.setSubject(subject);
         mailRequest.setMessage(message);
 
-        // 发送 POST 请求到 Mail Service
+        // sending post request to mail service using restTemplate
         restTemplate.postForEntity(MAIL_SERVICE_URL, mailRequest, String.class);
     }
 
-    // 定义一个简单的邮件请求类
-    public static class mailrequest {
-        private String recipient;
-        private String subject;
-        private String message;
-
-        // Getters 和 Setters
-
-        public String getRecipient() {
-            return recipient;
-        }
-
-        public void setRecipient(String recipient) {
-            this.recipient = recipient;
-        }
-
-        public String getSubject() {
-            return subject;
-        }
-
-        public void setSubject(String subject) {
-            this.subject = subject;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-    }
 }

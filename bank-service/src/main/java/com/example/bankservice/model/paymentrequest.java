@@ -9,11 +9,11 @@ public class paymentrequest {
     private String customerAccountId;
     private String storeAccountId;
 
-    // 无参构造函数
+    // no args constructor
     public paymentrequest() {
     }
 
-    // 带参数的构造函数
+    // all args constructor
     public paymentrequest(String orderId, BigDecimal amount, String currency, String customerAccountId, String storeAccountId) {
         this.orderId = orderId;
         this.amount = amount;
@@ -22,7 +22,7 @@ public class paymentrequest {
         this.storeAccountId = storeAccountId;
     }
 
-    // Getter 和 Setter 方法
+    // Getter and Setter
 
     public String getOrderId() {
         return orderId;

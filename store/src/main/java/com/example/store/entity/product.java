@@ -6,7 +6,6 @@ public class product {
     private String description;
     private Double price;
 
-    // Getter 和 Setter 方法
     public Long getId() {
         return id;
     }
