@@ -1,103 +1,133 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>商品详情</title>
+    <title>Product Details | Your App Name</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --background-color: #f9f9f9;
+            --text-color: #333333;
+            --card-background: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-            padding: 20px;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background-color: var(--card-background);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
-            color: #333;
-            font-size: 28px;
+            color: var(--primary-color);
+            font-size: 32px;
             margin-bottom: 20px;
+            font-weight: 600;
         }
 
         p {
             font-size: 18px;
-            color: #555;
+            color: var(--text-color);
+            margin-bottom: 20px;
         }
 
         .price {
-            font-size: 22px;
-            color: #e74c3c;
-            font-weight: bold;
+            font-size: 28px;
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 30px;
+            display: block;
         }
 
         form {
-            margin-top: 20px;
-            padding: 20px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+            margin-bottom: 30px;
         }
 
         label {
-            font-size: 16px;
-            margin-right: 10px;
+            font-size: 18px;
+            margin-right: 15px;
+            font-weight: 500;
         }
 
         input[type="number"] {
-            width: 60px;
-            padding: 5px;
+            width: 80px;
+            padding: 10px;
             font-size: 16px;
             margin-right: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
 
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
+        .btn {
+            padding: 12px 24px;
+            background-color: var(--secondary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.1s ease;
         }
 
-        button:hover {
-            background-color: #45a049;
+        .btn:hover {
+            background-color: #27ae60;
         }
 
-        a {
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .back-link {
             display: inline-block;
             margin-top: 20px;
-            color: #3498db;
+            color: var(--primary-color);
             text-decoration: none;
-            font-size: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            transition: color 0.3s ease;
         }
 
-        a:hover {
+        .back-link:hover {
+            color: #2980b9;
             text-decoration: underline;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1 th:text="${product.name}">商品名称</h1>
-    <p th:text="${product.description}">商品描述</p>
-    <p>价格：<span class="price">¥<span th:text="${product.price}">0.00</span></span></p>
+    <h1 th:text="${product.name}">Product Name</h1>
+    <p th:text="${product.description}">Product description goes here. This is where you'd see all the details about the product.</p>
+    <span class="price">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}">0.00</span></span>
 
     <form th:action="@{/orders}" method="post">
         <input type="hidden" name="productId" th:value="${product.id}"/>
-        <label for="quantity">数量：</label>
+        <label for="quantity">Quantity:</label>
         <input type="number" name="quantity" id="quantity" min="1" value="1"/>
-        <button type="submit">下单</button>
+        <button type="submit" class="btn">Place Order</button>
     </form>
 
-    <a th:href="@{/products}">返回商品列表</a>
+    <a th:href="@{/products}" class="back-link">Back to Product List</a>
 </div>
 </body>
 </html>

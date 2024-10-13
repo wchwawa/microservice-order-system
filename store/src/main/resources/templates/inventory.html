@@ -1,98 +1,136 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-  <title>库存列表</title>
+  <title>Inventory List | Your App Name</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f4f4f9;
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --accent-color: #e74c3c;
+      --background-color: #f9f9f9;
+      --text-color: #333333;
+      --card-background: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
     }
 
     h1 {
       text-align: center;
-      color: #333;
-      margin-bottom: 20px;
+      color: var(--primary-color);
+      margin-bottom: 30px;
+      font-size: 32px;
+      font-weight: 600;
     }
 
     table {
       width: 100%;
-      border-collapse: collapse;
-      margin: 0 auto;
-      background-color: #fff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-collapse: separate;
+      border-spacing: 0;
+      background-color: var(--card-background);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
     }
 
     th, td {
-      padding: 12px 15px;
+      padding: 16px;
       text-align: left;
-      border-bottom: 1px solid #ddd;
     }
 
     th {
-      background-color: #4CAF50;
+      background-color: var(--primary-color);
       color: white;
-      font-weight: bold;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f8f9fa;
     }
 
     tr:hover {
-      background-color: #f1f1f1;
+      background-color: #e9ecef;
     }
 
-    button {
+    .btn {
       display: block;
-      margin: 20px auto;
-      padding: 10px 20px;
-      background-color: #4CAF50;
+      margin: 30px auto 0;
+      padding: 12px 24px;
+      background-color: var(--secondary-color);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s ease;
+      font-size: 18px;
+      font-weight: 500;
+      transition: background-color 0.3s ease, transform 0.1s ease;
     }
 
-    button:hover {
-      background-color: #45a049;
+    .btn:hover {
+      background-color: #27ae60;
     }
 
-    @media (max-width: 600px) {
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    @media (max-width: 768px) {
       table {
-        width: 100%;
+        font-size: 14px;
       }
 
       th, td {
-        font-size: 14px;
-        padding: 10px;
+        padding: 12px;
       }
 
-      button {
+      .btn {
         width: 100%;
-        font-size: 14px;
+        font-size: 16px;
       }
     }
   </style>
 </head>
 <body>
-<h1>仓库库存列表</h1>
-<table>
-  <thead>
-  <tr>
-    <th>仓库名称</th>
-    <th>产品名称</th>
-    <th>库存数量</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr th:each="item : ${inventoryList}">
-    <td th:text="${item.warehouseName}">仓库名称</td>
-    <td th:text="${item.productName}">产品名称</td>
-    <td th:text="${item.quantity}">库存数量</td>
-  </tr>
-  </tbody>
-</table>
-<button type="button" onclick="history.back()">返回上一页</button>
+<div class="container">
+  <h1>Warehouse Inventory List</h1>
+  <table>
+    <thead>
+    <tr>
+      <th>Warehouse Name</th>
+      <th>Product Name</th>
+      <th>Quantity in Stock</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item : ${inventoryList}">
+      <td th:text="${item.warehouseName}">Warehouse Name</td>
+      <td th:text="${item.productName}">Product Name</td>
+      <td th:text="${item.quantity}">Quantity</td>
+    </tr>
+    </tbody>
+  </table>
+  <button type="button" onclick="history.back()" class="btn">Go Back</button>
+</div>
 </body>
 </html>
