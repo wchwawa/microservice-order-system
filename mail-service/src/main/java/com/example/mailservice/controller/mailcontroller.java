@@ -11,13 +11,11 @@ public class mailcontroller {
 
     private static final Logger logger = LoggerFactory.getLogger(mailcontroller.class);
 
-    // 定义一个简单的邮件请求类
     public static class EmailRequest {
         private String recipient;
         private String subject;
         private String message;
 
-        // Getters 和 Setters
 
         public String getRecipient() {
             return recipient;
@@ -47,11 +45,11 @@ public class mailcontroller {
     @PostMapping("/send")
     public ResponseEntity<String> sendEmail(@RequestBody EmailRequest emailRequest) {
         // 仅打印邮件信息
-        logger.info("发送邮件给: {}", emailRequest.getRecipient());
-        logger.info("邮件主题: {}", emailRequest.getSubject());
-        logger.info("邮件内容: {}", emailRequest.getMessage());
+        logger.info("sending email to: {}", emailRequest.getRecipient());
+        logger.info("title: {}", emailRequest.getSubject());
+        logger.info("content: {}", emailRequest.getMessage());
 
         // 返回成功响应
-        return ResponseEntity.ok("邮件已打印到控制台");
+        return ResponseEntity.ok("email sent successfully");
     }
 }

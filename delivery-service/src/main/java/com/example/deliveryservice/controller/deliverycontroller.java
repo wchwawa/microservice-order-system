@@ -6,9 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * 送货控制器，用于接收送货请求
- */
 @RestController
 @RequestMapping("/deliveries")
 public class deliverycontroller {
@@ -18,8 +15,8 @@ public class deliverycontroller {
 
     @PostMapping("/create")
     public ResponseEntity<String> createDelivery(@RequestBody deliveryrequest request) {
-        // 处理送货请求
+        // handle the request asynchronously
         new Thread(() -> deliveryService.processDelivery(request)).start();
-        return ResponseEntity.ok("送货请求已接收并处理中");
+        return ResponseEntity.ok("delivery request received and being processed");
     }
 }

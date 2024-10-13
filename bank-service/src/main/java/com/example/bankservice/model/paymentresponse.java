@@ -5,18 +5,18 @@ public class paymentresponse {
     private String transactionId;
     private String message;
 
-    // 无参构造函数
+    // no args constructor
     public paymentresponse() {
     }
 
-    // 带参数的构造函数
+    // all args constructor
     public paymentresponse(String status, String transactionId, String message) {
         this.status = status;
         this.transactionId = transactionId;
         this.message = message;
     }
 
-    // Getter 和 Setter 方法
+    // Getter and Setter
 
     public String getStatus() {
         return status;

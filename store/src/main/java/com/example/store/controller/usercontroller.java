@@ -16,7 +16,6 @@ public class usercontroller {
 
     @PostMapping("/user/register")
     public String registerUser(@ModelAttribute user user, Model model) {
-        // 检查用户名是否已存在
         if (userservice.isUsernameExists(user.getUsername())) {
             model.addAttribute("usernameExists", true);
             return "register";

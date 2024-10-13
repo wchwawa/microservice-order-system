@@ -28,12 +28,12 @@ public class userservice implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         user user = usermapper.findByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("用户不存在");
+            throw new UsernameNotFoundException("user not found");
         }
-        // 添加日志
+        // log user information
         logger.debug("User found: username={}, passwordHash={}", user.getUsername(), user.getPasswordHash());
         if (user.getPasswordHash() == null || user.getPasswordHash().isEmpty()) {
-            throw new InternalAuthenticationServiceException("用户密码为空");
+                throw new InternalAuthenticationServiceException("user has no password set");
         }
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),
@@ -48,7 +48,7 @@ public class userservice implements UserDetailsService {
     }
 
 
-    // 注册新用户
+    // register a new user
     public void register(user user) {
         user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
         usermapper.insertUser(user);

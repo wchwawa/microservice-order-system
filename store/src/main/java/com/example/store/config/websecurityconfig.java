@@ -17,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class websecurityconfig {
 
-    // 移除对 userservice 的注入
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {

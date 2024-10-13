@@ -11,7 +11,6 @@ public class user {
     private Date createdAt;
     private List<orderitem> orderitems;
 
-    // Getter 和 Setter 方法
     public Long getId() {
         return id;
     }
