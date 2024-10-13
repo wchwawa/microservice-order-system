@@ -39,13 +39,6 @@ public class orderservice {
     @Autowired
     private warehousemapper warehouseMapper;
 
-    // 移除自动装配的外部服务
-    // @Autowired
-    // private deliveryservice deliveryService;
-
-    // @Autowired
-    // private emailservice emailService;
-
     // 添加 RestTemplate，用于调用外部服务
     @Autowired
     private RestTemplate restTemplate;
@@ -69,15 +62,15 @@ public class orderservice {
         // 获取用户信息
         user user = userMapper.findByUsername(username);
         if (user == null) {
-            logger.error("用户 {} 不存在", username);
-            throw new RuntimeException("用户不存在");
+            logger.error("user {} not exist", username);
+            throw new RuntimeException("user not exist");
         }
 
         // 获取商品信息
         product product = productMapper.findById(productId);
         if (product == null) {
-            logger.error("商品 ID {} 不存在", productId);
-            throw new RuntimeException("商品不存在");
+            logger.error("Item ID {} not exist", productId);
+            throw new RuntimeException("Item not exist");
         }
 
         // 查找所有仓库的库存
@@ -103,21 +96,21 @@ public class orderservice {
 
         if (remainingQuantity > 0) {
             // 总库存不足，处理缺货情况
-            logger.warn("商品 ID {} 库存不足，需求量：{}，总可用库存：{}", productId, quantity, quantity - remainingQuantity);
+            logger.warn("Product ID {} is out of stock, requested quantity: {}, total available stock: {}", productId, quantity, quantity - remainingQuantity);
             // 发送邮件通知
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单失败");
-                emailRequest.put("message", "抱歉，商品库存不足，无法完成您的订单。");
+                emailRequest.put("subject", "Order Failed");
+                emailRequest.put("message", "Sorry, the product is out of stock and we cannot complete your order.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送库存不足邮件给 {}", user.getEmail());
+                logger.debug("Sent out-of-stock email to {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("failed to sending order：{}", e.getMessage());
             }
-            throw new RuntimeException("库存不足");
+            throw new RuntimeException("Out of stock");
         }
 
         // 更新库存
@@ -127,7 +120,7 @@ public class orderservice {
             inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouse.getId(), productId);
             inventory.setQuantity(inventory.getQuantity() - allocatedQuantity);
             inventoryMapper.updateInventory(inventory);
-            logger.debug("从仓库 {} 分配了 {} 个商品，剩余库存：{}", warehouse.getName(), allocatedQuantity, inventory.getQuantity());
+            logger.debug("Allocated {} items from warehouse {}, remaining stock: {}", allocatedQuantity, warehouse.getName(), inventory.getQuantity());
         }
 
         // 计算总价
@@ -137,9 +130,9 @@ public class orderservice {
         order order = new order();
         order.setUserId(user.getId());
         order.setTotalAmount(totalAmount);
-        order.setStatus("待支付");
+        order.setStatus("waiting for payment");
         orderMapper.insertOrder(order);
-        logger.debug("创建订单 ID：{}", order.getId());
+        logger.debug("Create order. ID：{}", order.getId());
 
         for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
             warehouse warehouse = entry.getKey();
@@ -151,15 +144,15 @@ public class orderservice {
             item.setPrice(product.getPrice());
             item.setWarehouseId(warehouse.getId());
             orderItemMapper.insertOrderItem(item);
-            logger.debug("创建订单项 ID：{}，仓库 ID：{}，数量：{}", item.getId(), warehouse.getId(), allocatedQuantity);
+            logger.debug("Create order ID：{}，warehouse ID：{}，quantity：{}", item.getId(), warehouse.getId(), allocatedQuantity);
         }
 
         boolean paymentSuccess = processPayment(order, totalAmount);
 
         if (paymentSuccess) {
             // 更新订单状态
-            orderMapper.updateOrderStatus(order.getId(), "已支付");
-            logger.debug("订单 ID {} 已支付", order.getId());
+            orderMapper.updateOrderStatus(order.getId(), "paid");
+            logger.debug("order ID {} has been paid", order.getId());
 
             // 发送送货请求
             for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
@@ -175,9 +168,9 @@ public class orderservice {
 
                     String deliveryApiUrl = deliveryServiceUrl + "/deliveries/create";
                     restTemplate.postForEntity(deliveryApiUrl, deliveryRequest, String.class);
-                    logger.debug("发送仓库 {} 的送货请求，数量：{}", warehouse.getName(), allocatedQuantity);
+                    logger.debug("sending delivery request to warehouse {}，quantity：{}", warehouse.getName(), allocatedQuantity);
                 } catch (Exception e) {
-                    logger.error("发送送货请求失败：{}", e.getMessage());
+                    logger.error("delivery request sending failed：{}", e.getMessage());
                 }
             }
 
@@ -185,19 +178,19 @@ public class orderservice {
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单已支付");
-                emailRequest.put("message", "您的订单已成功支付，我们将尽快为您发货。");
+                emailRequest.put("subject", "order paid");
+                emailRequest.put("message", "your order has been paid successfully, we will deliver it soon.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送订单已支付邮件给 {}", user.getEmail());
+                logger.debug("sending order has been paid email to {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("fail to send email：{}", e.getMessage());
             }
         } else {
             // 支付失败，更新订单状态
-            orderMapper.updateOrderStatus(order.getId(), "支付失败");
-            logger.warn("订单 ID {} 支付失败", order.getId());
+            orderMapper.updateOrderStatus(order.getId(), "fail to pay");
+            logger.warn("order ID {} payment failed", order.getId());
 
             // 恢复库存
             for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
@@ -206,28 +199,28 @@ public class orderservice {
                 inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouse.getId(), productId);
                 inventory.setQuantity(inventory.getQuantity() + allocatedQuantity);
                 inventoryMapper.updateInventory(inventory);
-                logger.debug("恢复仓库 {} 的库存 {} 个商品，当前库存：{}", warehouse.getName(), allocatedQuantity, inventory.getQuantity());
+                logger.debug("restore warehouse {} {} items，current inventory：{}", warehouse.getName(), allocatedQuantity, inventory.getQuantity());
             }
 
             // 发送邮件通知
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单支付失败");
-                emailRequest.put("message", "您的订单支付失败，请稍后重试。");
+                emailRequest.put("subject", "paid failed");
+                emailRequest.put("message", "sorry, your order payment failed, please try again.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送订单支付失败邮件给 {}", user.getEmail());
+                logger.debug("failed to send order-failed email {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("failed to send eamil：{}", e.getMessage());
             }
-            throw new RuntimeException("支付失败");
+            throw new RuntimeException("payment failed");
         }
     }
 
     private boolean processPayment(order order, double totalAmount) {
-        // 创建支付请求
+        // Create payment request
         paymentrequest paymentRequest = new paymentrequest();
         paymentRequest.setOrderId(order.getId().toString());
         paymentRequest.setAmount(BigDecimal.valueOf(totalAmount));
@@ -236,18 +229,18 @@ public class orderservice {
         paymentRequest.setStoreAccountId(STORE_ACCOUNT_ID);
 
         try {
-            // 调用银行服务的支付接口
+            // Call bank service payment interface
             paymentresponse paymentResponse = restTemplate.postForObject(bankServiceUrl, paymentRequest, paymentresponse.class);
 
             if (paymentResponse != null && "SUCCESS".equals(paymentResponse.getStatus())) {
-                logger.info("订单 ID {} 支付成功，交易 ID {}", order.getId(), paymentResponse.getTransactionId());
+                logger.info("Order ID {} payment successful, transaction ID {}", order.getId(), paymentResponse.getTransactionId());
                 return true;
             } else {
-                logger.error("订单 ID {} 支付失败，原因：{}", order.getId(), paymentResponse != null ? paymentResponse.getMessage() : "未知错误");
+                logger.error("Order ID {} payment failed, reason: {}", order.getId(), paymentResponse != null ? paymentResponse.getMessage() : "Unknown error");
                 return false;
             }
         } catch (Exception e) {
-            logger.error("订单 ID {} 支付异常，错误信息：{}", order.getId(), e.getMessage());
+            logger.error("Order ID {} payment exception, error message: {}", order.getId(), e.getMessage());
             return false;
         }
     }
@@ -264,48 +257,48 @@ public class orderservice {
     public void cancelOrder(String username, Long orderId) {
         user user = userMapper.findByUsername(username);
         if (user == null) {
-            logger.error("用户 {} 不存在，无法取消订单 {}", username, orderId);
-            throw new RuntimeException("用户不存在");
+            logger.error("User {} does not exist, cannot cancel order {}", username, orderId);
+            throw new RuntimeException("User does not exist");
         }
 
         order order = orderMapper.findById(orderId);
         if (order == null) {
-            logger.error("订单 ID {} 不存在", orderId);
-            throw new RuntimeException("订单不存在");
+            logger.error("Order ID {} does not exist", orderId);
+            throw new RuntimeException("Order does not exist");
         }
 
         if (!order.getUserId().equals(user.getId())) {
-            logger.warn("用户 {} 尝试取消非自己的订单 {}", username, orderId);
-            throw new RuntimeException("无法取消非自己的订单");
+            logger.warn("User {} attempted to cancel order {} that does not belong to them", username, orderId);
+            throw new RuntimeException("Cannot cancel an order that does not belong to you");
         }
 
-        if (!"已支付".equals(order.getStatus())) {
-            logger.warn("订单 ID {} 状态为 {}，无法取消", orderId, order.getStatus());
-            // 发送邮件通知
+        if (!"Paid".equals(order.getStatus())) {
+            logger.warn("Order ID {} status is {}, cannot be cancelled", orderId, order.getStatus());
+            // Send email notification
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单无法取消");
-                emailRequest.put("message", "抱歉，订单无法取消，请检查订单状态。");
+                emailRequest.put("subject", "Order Cannot Be Cancelled");
+                emailRequest.put("message", "Sorry, the order cannot be cancelled. Please check the order status.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送订单无法取消邮件给 {}", user.getEmail());
+                logger.debug("Sent order cannot be cancelled email to {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("Failed to send email: {}", e.getMessage());
             }
-            throw new RuntimeException("订单无法取消");
+            throw new RuntimeException("Order cannot be cancelled");
         }
 
-        // 调用银行服务进行退款
+        // Call bank service for refund
         boolean refundSuccess = processRefund(order);
 
         if (refundSuccess) {
-            // 更新订单状态
-            orderMapper.updateOrderStatus(order.getId(), "已取消");
-            logger.debug("订单 ID {} 已取消", order.getId());
+            // Update order status
+            orderMapper.updateOrderStatus(order.getId(), "Cancelled");
+            logger.debug("Order ID {} has been cancelled", order.getId());
 
-            // 恢复库存
+            // Restore inventory
             List<orderitem> items = orderItemMapper.findByOrderId(order.getId());
             for (orderitem item : items) {
                 Long warehouseId = item.getWarehouseId();
@@ -313,46 +306,45 @@ public class orderservice {
                 if (inventory != null) {
                     inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
                     inventoryMapper.updateInventory(inventory);
-                    logger.debug("恢复仓库 ID {} 的库存 {} 个商品，当前库存：{}", warehouseId, item.getQuantity(), inventory.getQuantity());
+                    logger.debug("Restored {} items to warehouse ID {}, current inventory: {}", item.getQuantity(), warehouseId, inventory.getQuantity());
                 }
             }
 
-            // 发送邮件通知
+            // Send email notification
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单已取消");
-                emailRequest.put("message", "您的订单已取消，退款将退回您的账户。");
+                emailRequest.put("subject", "Order Cancelled");
+                emailRequest.put("message", "Your order has been cancelled. The refund will be returned to your account.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送订单已取消邮件给 {}", user.getEmail());
+                logger.debug("Sent order cancelled email to {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("Failed to send email: {}", e.getMessage());
             }
         } else {
-            // 退款失败，处理异常
-            logger.error("订单 ID {} 退款失败", orderId);
-            // 发送邮件通知
+            // Refund failed, handle exception
+            logger.error("Order ID {} refund failed", orderId);
+            // Send email notification
             try {
                 Map<String, String> emailRequest = new HashMap<>();
                 emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "订单取消失败");
-                emailRequest.put("message", "抱歉，订单取消失败，请联系客服。");
+                emailRequest.put("subject", "Order Cancellation Failed");
+                emailRequest.put("message", "Sorry, order cancellation failed. Please contact customer service.");
 
                 String emailApiUrl = emailServiceUrl + "/emails/send";
                 restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("发送订单取消失败邮件给 {}", user.getEmail());
+                logger.debug("Sent order cancellation failed email to {}", user.getEmail());
             } catch (Exception e) {
-                logger.error("发送邮件失败：{}", e.getMessage());
+                logger.error("Failed to send email: {}", e.getMessage());
             }
-            throw new RuntimeException("退款失败");
+            throw new RuntimeException("Refund failed");
         }
     }
 
-    // 新增方法：调用银行服务进行退款
+    // New method: Call bank service for refund
     private boolean processRefund(order order) {
-        // 创建退款请求
         paymentrequest refundRequest = new paymentrequest();
         refundRequest.setOrderId(order.getId().toString());
         refundRequest.setAmount(BigDecimal.valueOf(order.getTotalAmount()));
@@ -361,18 +353,18 @@ public class orderservice {
         refundRequest.setStoreAccountId(STORE_ACCOUNT_ID);
 
         try {
-            // 调用银行服务的退款接口
+            // refund api
             paymentresponse refundResponse = restTemplate.postForObject(bankServiceUrl + "/refund", refundRequest, paymentresponse.class);
 
             if (refundResponse != null && "SUCCESS".equals(refundResponse.getStatus())) {
-                logger.info("订单 ID {} 退款成功，交易 ID {}", order.getId(), refundResponse.getTransactionId());
+                logger.info("Order ID {} refund successful, transaction ID {}", order.getId(), refundResponse.getTransactionId());
                 return true;
             } else {
-                logger.error("订单 ID {} 退款失败，原因：{}", order.getId(), refundResponse != null ? refundResponse.getMessage() : "未知错误");
+                logger.error("Order ID {} refund failed, reason: {}", order.getId(), refundResponse != null ? refundResponse.getMessage() : "Unknown error");
                 return false;
             }
         } catch (Exception e) {
-            logger.error("订单 ID {} 退款异常，错误信息：{}", order.getId(), e.getMessage());
+            logger.error("Order ID {} refund exception, error message: {}", order.getId(), e.getMessage());
             return false;
         }
     }

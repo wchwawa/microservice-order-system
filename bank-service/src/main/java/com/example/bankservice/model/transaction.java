@@ -11,15 +11,15 @@ public class transaction {
     private String currency;
     private String customerAccountId;
     private String storeAccountId;
-    private String type; // "PAYMENT" 或 "REFUND"
-    private String status; // "SUCCESS" 或 "FAILURE"
+    private String type; // "PAYMENT" or "REFUND"
+    private String status; // "SUCCESS" or "FAILURE"
     private Timestamp timestamp;
 
-    // 无参构造函数
+    // no args constructor
     public transaction() {
     }
 
-    // 带参数的构造函数
+    // all args constructor
     public transaction(Long id, String transactionId, String orderId, BigDecimal amount, String currency,
                        String customerAccountId, String storeAccountId, String type, String status, Timestamp timestamp) {
         this.id = id;
@@ -34,7 +34,7 @@ public class transaction {
         this.timestamp = timestamp;
     }
 
-    // Getter 和 Setter 方法
+    // Getter and Setter
 
     public Long getId() {
         return id;

@@ -19,6 +19,6 @@ public class inventorycontroller {
     public String showInventory(Model model) {
         List<inventory> inventoryList = inventoryService.getAllInventory();
         model.addAttribute("inventoryList", inventoryList);
-        return "inventory"; // 返回的视图名称，将在后续步骤中创建对应的 HTML 文件
+        return "inventory"; // returns the inventory.html template
     }
 }

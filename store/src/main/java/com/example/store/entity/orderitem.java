@@ -6,10 +6,8 @@ public class orderitem {
     private Long productId;
     private Integer quantity;
     private Double price;
-    private Long warehouseId; // 新增字段
+    private Long warehouseId;
 
-
-    // Getter 和 Setter 方法
     public Long getId() {
         return id;
     }

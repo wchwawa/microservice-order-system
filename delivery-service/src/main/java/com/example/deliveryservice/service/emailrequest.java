@@ -5,14 +5,12 @@ public class emailrequest {
     private String subject;
     private String message;
 
-    // 构造函数
     public emailrequest(String recipient, String subject, String message) {
         this.recipient = recipient;
         this.subject = subject;
         this.message = message;
     }
 
-    // Getter 和 Setter 方法
     public String getRecipient() {
         return recipient;
     }

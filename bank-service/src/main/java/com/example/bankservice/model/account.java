@@ -8,11 +8,11 @@ public class account {
     private String username;
     private BigDecimal balance;
 
-    // 无参构造函数
+    // no args constructor
     public account() {
     }
 
-    // 带参数的构造函数
+    // all args constructor
     public account(Long id, String accountId, String username, BigDecimal balance) {
         this.id = id;
         this.accountId = accountId;
@@ -20,8 +20,7 @@ public class account {
         this.balance = balance;
     }
 
-    // Getter 和 Setter 方法
-
+    // Getter and Setter
     public Long getId() {
         return id;
     }

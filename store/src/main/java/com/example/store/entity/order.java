@@ -11,7 +11,6 @@ public class order {
     private Date createdAt;
     private List<orderitem> orderItems;
 
-    // Getter 和 Setter 方法
     public Long getId() {
         return id;
     }

@@ -16,44 +16,39 @@ public class emailservice {
 
     public void sendEmail() {
         logger.info("Sending email...");
-        // 其他代码
     }
 
     @Autowired
     private RestTemplate restTemplate;
 
     @Value("${email.service.url}")
-    private String emailServiceUrl; // 确保变量名与 @Value 注解一致
+    private String emailServiceUrl;
 
     public void sendEmail(String recipient, String subject, String message) {
-        // 构建请求体
         EmailRequest emailRequest = new EmailRequest(recipient, subject, message);
 
-        // 调用 email-service 的 /emails/send 端点
-        String emailApiUrl = emailServiceUrl + "/emails/send"; // 使用 emailServiceUrl
+        String emailApiUrl = emailServiceUrl + "/emails/send";
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-            logger.info("邮件发送成功: " + response.getBody());
+            logger.info("email sending is success: " + response.getBody());
         } catch (Exception e) {
-            logger.error("邮件发送失败: " + e.getMessage());
-            throw new RuntimeException("无法发送邮件");
+            logger.error("email sending is failed: " + e.getMessage());
+            throw new RuntimeException("can not send email");
         }
     }
 
-    // 定义 EmailRequest 类
     public static class EmailRequest {
         private String recipient;
         private String subject;
         private String message;
 
-        // 构造函数
         public EmailRequest(String recipient, String subject, String message) {
             this.recipient = recipient;
             this.subject = subject;
             this.message = message;
         }
 
-        // Getters 和 Setters
+        // Getters and Setters
 
         public String getRecipient() {
             return recipient;

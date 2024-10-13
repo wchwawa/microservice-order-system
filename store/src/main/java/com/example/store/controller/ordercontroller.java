@@ -21,7 +21,7 @@ public class ordercontroller {
         try {
             String username = getCurrentUsername();
             orderService.createorder(username, productId, quantity);
-            redirectAttributes.addFlashAttribute("message", "您的订单已成功创建！我们将尽快为您发货。");
+            redirectAttributes.addFlashAttribute("message", "your order has been placed successfully.");
             return "redirect:/ordersuccess";
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -57,7 +57,7 @@ public class ordercontroller {
         try {
             String username = getCurrentUsername();
             orderService.cancelOrder(username, orderId);
-            redirectAttributes.addFlashAttribute("message", "您的订单已成功取消。");
+            redirectAttributes.addFlashAttribute("message", "your order has been cancelled successfully.");
             return "redirect:/ordercancelsuccess";
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());

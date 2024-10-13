@@ -95,7 +95,7 @@
     <p>总金额：¥<span th:text="${order.totalAmount}">0.00</span></p>
     <p>状态：<span th:text="${order.status}">未知</span></p>
     <p>下单时间：<span th:text="${#dates.format(order.createdAt, 'yyyy-MM-dd HH:mm:ss')}">日期</span></p>
-    <form th:action="@{/orders/cancel}" method="post" th:if="${order.status == '已支付'}">
+    <form th:action="@{/orders/cancel}" method="post" th:if="${order.status == 'paid'}">
       <input type="hidden" name="orderId" th:value="${order.id}"/>
       <button type="submit">取消订单</button>
     </form>

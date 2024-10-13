@@ -7,7 +7,7 @@ public class deliveryrequest {
     private String productName;
     private int quantity;
 
-    // Getters 和 Setters
+    // Getters and Setters
 
     public String getOrderId() {
         return orderId;
