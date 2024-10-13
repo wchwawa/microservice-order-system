@@ -1,13 +1,24 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
-    <title>订单失败</title>
+    <title>Order Failed | Your App Name</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --background-color: #f9f9f9;
+            --text-color: #333333;
+            --card-background: #ffffff;
+        }
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
             padding: 20px;
         }
         .container {
@@ -19,28 +30,43 @@
             display: block;
             width: 100%;
             font-size: 18px;
+            font-weight: 500;
+            padding: 12px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
         }
         .toast-container {
             z-index: 1060;
+        }
+        .toast-header {
+            background-color: var(--accent-color) !important;
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- 失败Toast -->
+    <!-- Failure Toast -->
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header bg-danger text-white">
-                <strong class="me-auto">订单失败</strong>
-                <small>刚刚</small>
+            <div class="toast-header text-white">
+                <strong class="me-auto">Order Failed</strong>
+                <small>Just now</small>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <div class="toast-body" th:text="'原因：' + ${errorMessage}">
-                您的订单未能成功创建。
+            <div class="toast-body" th:text="'Reason: ' + ${errorMessage}">
+                Your order could not be created.
             </div>
         </div>
     </div>
-    <a href="/products" class="btn btn-primary mt-5">返回产品页面</a>
+    <a href="/products" class="btn btn-primary mt-5">Back to Products</a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
