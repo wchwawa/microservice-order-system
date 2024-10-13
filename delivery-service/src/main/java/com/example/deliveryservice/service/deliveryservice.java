@@ -1,5 +1,6 @@
 package com.example.deliveryservice.service;
 
+import com.example.deliveryservice.model.MailRequest;
 import com.example.deliveryservice.model.deliveryrequest;
 import com.example.deliveryservice.model.deliverystatus;
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class deliveryservice {
         String emailApiUrl = emailServiceUrl + "/emails/send";
 
         // 创建邮件请求对象
-        deliveryservice.mailrequest mailRequest = new deliveryservice.mailrequest();
+        MailRequest mailRequest = new MailRequest();
         mailRequest.setRecipient(recipient);
         mailRequest.setSubject(subject);
         mailRequest.setMessage(message);
@@ -87,36 +88,4 @@ public class deliveryservice {
         restTemplate.postForEntity(MAIL_SERVICE_URL, mailRequest, String.class);
     }
 
-    // 定义一个简单的邮件请求类
-    public static class mailrequest {
-        private String recipient;
-        private String subject;
-        private String message;
-
-        // Getters 和 Setters
-
-        public String getRecipient() {
-            return recipient;
-        }
-
-        public void setRecipient(String recipient) {
-            this.recipient = recipient;
-        }
-
-        public String getSubject() {
-            return subject;
-        }
-
-        public void setSubject(String subject) {
-            this.subject = subject;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-    }
 }
