@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Time;
 import java.util.*;
 import java.math.BigDecimal;
 import org.slf4j.Logger;
@@ -58,7 +59,7 @@ public class orderservice {
     private static final String STORE_ACCOUNT_ID = "store_account_001";
 
     @Transactional
-    public void createorder(String username, Long productId, int quantity) {
+    public void createorder(String username, Long productId, int quantity) throws InterruptedException {
         // 获取用户信息
         user user = userMapper.findByUsername(username);
         if (user == null) {
@@ -146,9 +147,12 @@ public class orderservice {
             orderItemMapper.insertOrderItem(item);
             logger.debug("Create order ID：{}，warehouse ID：{}，quantity：{}", item.getId(), warehouse.getId(), allocatedQuantity);
         }
+        //mocking order placed successfully but payment not done yet context
+        Thread.sleep(2000);
 
         boolean paymentSuccess = processPayment(order, totalAmount);
 
+        // payment success
         if (paymentSuccess) {
             // 更新订单状态
             orderMapper.updateOrderStatus(order.getId(), "paid");
@@ -272,7 +276,7 @@ public class orderservice {
             throw new RuntimeException("Cannot cancel an order that does not belong to you");
         }
 
-        if (!"Paid".equals(order.getStatus())) {
+        if (!"paid".equals(order.getStatus())) {
             logger.warn("Order ID {} status is {}, cannot be cancelled", orderId, order.getStatus());
             // Send email notification
             try {

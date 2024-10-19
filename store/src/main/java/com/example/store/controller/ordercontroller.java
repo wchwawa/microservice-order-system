@@ -26,6 +26,9 @@ public class ordercontroller {
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/orderfailure";
+        } catch (InterruptedException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "order creation failed due to an internal error.");
+            return "redirect:/orderfailure";
         }
     }
 
