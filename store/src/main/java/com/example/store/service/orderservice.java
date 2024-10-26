@@ -4,12 +4,16 @@ import com.example.store.entity.*;
 import com.example.store.mapper.*;
 import com.example.store.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Time;
 import java.util.*;
 import java.math.BigDecimal;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,9 +21,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
 
+
+
 @Service
 public class orderservice {
-
+    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final Lock readLock = rwLock.readLock();
+    private final Lock writeLock = rwLock.writeLock();
     private static final Logger logger = LoggerFactory.getLogger(orderservice.class);
 
     @Autowired
@@ -61,6 +69,7 @@ public class orderservice {
     @Transactional
     public void createorder(String username, Long productId, int quantity) throws InterruptedException {
         // 获取用户信息
+        writeLock.lock();
         user user = userMapper.findByUsername(username);
         if (user == null) {
             logger.error("user {} not exist", username);
@@ -81,7 +90,7 @@ public class orderservice {
 
         // 遍历仓库，分配库存
         for (warehouse warehouse : warehouses) {
-            inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouse.getId(), productId);
+            inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
             if (inventory != null && inventory.getQuantity() > 0) {
                 int availableQuantity = inventory.getQuantity();
                 if (availableQuantity >= remainingQuantity) {
@@ -118,7 +127,7 @@ public class orderservice {
         for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
             warehouse warehouse = entry.getKey();
             int allocatedQuantity = entry.getValue();
-            inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouse.getId(), productId);
+            inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
             inventory.setQuantity(inventory.getQuantity() - allocatedQuantity);
             inventoryMapper.updateInventory(inventory);
             logger.debug("Allocated {} items from warehouse {}, remaining stock: {}", allocatedQuantity, warehouse.getName(), inventory.getQuantity());
@@ -131,9 +140,8 @@ public class orderservice {
         order order = new order();
         order.setUserId(user.getId());
         order.setTotalAmount(totalAmount);
-        order.setStatus("waiting for payment");
+        order.setStatus("Pending Payment"); // 初始状态为待支付
         orderMapper.insertOrder(order);
-        logger.debug("Create order. ID：{}", order.getId());
 
         for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
             warehouse warehouse = entry.getKey();
@@ -147,8 +155,6 @@ public class orderservice {
             orderItemMapper.insertOrderItem(item);
             logger.debug("Create order ID：{}，warehouse ID：{}，quantity：{}", item.getId(), warehouse.getId(), allocatedQuantity);
         }
-        //mocking order placed successfully but payment not done yet context
-        Thread.sleep(2000);
 
         boolean paymentSuccess = processPayment(order, totalAmount);
 
@@ -200,7 +206,7 @@ public class orderservice {
             for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
                 warehouse warehouse = entry.getKey();
                 int allocatedQuantity = entry.getValue();
-                inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouse.getId(), productId);
+                inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
                 inventory.setQuantity(inventory.getQuantity() + allocatedQuantity);
                 inventoryMapper.updateInventory(inventory);
                 logger.debug("restore warehouse {} {} items，current inventory：{}", warehouse.getName(), allocatedQuantity, inventory.getQuantity());
@@ -218,12 +224,23 @@ public class orderservice {
                 logger.debug("failed to send order-failed email {}", user.getEmail());
             } catch (Exception e) {
                 logger.error("failed to send eamil：{}", e.getMessage());
+            } finally {
+                writeLock.unlock();
             }
             throw new RuntimeException("payment failed");
         }
     }
 
-    private boolean processPayment(order order, double totalAmount) {
+
+    @Async
+    public boolean processPayment(order order, double totalAmount) {
+        try {
+            Thread.sleep(5000); // 5秒延迟
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error("payment process is interrupted：{}", e.getMessage());
+            return false;
+        }
         // Create payment request
         paymentrequest paymentRequest = new paymentrequest();
         paymentRequest.setOrderId(order.getId().toString());
@@ -259,93 +276,99 @@ public class orderservice {
 
     @Transactional
     public void cancelOrder(String username, Long orderId) {
-        user user = userMapper.findByUsername(username);
-        if (user == null) {
-            logger.error("User {} does not exist, cannot cancel order {}", username, orderId);
-            throw new RuntimeException("User does not exist");
-        }
-
-        order order = orderMapper.findById(orderId);
-        if (order == null) {
-            logger.error("Order ID {} does not exist", orderId);
-            throw new RuntimeException("Order does not exist");
-        }
-
-        if (!order.getUserId().equals(user.getId())) {
-            logger.warn("User {} attempted to cancel order {} that does not belong to them", username, orderId);
-            throw new RuntimeException("Cannot cancel an order that does not belong to you");
-        }
-
-        if (!"paid".equals(order.getStatus())) {
-            logger.warn("Order ID {} status is {}, cannot be cancelled", orderId, order.getStatus());
-            // Send email notification
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "Order Cannot Be Cancelled");
-                emailRequest.put("message", "Sorry, the order cannot be cancelled. Please check the order status.");
-
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("Sent order cannot be cancelled email to {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("Failed to send email: {}", e.getMessage());
+        writeLock.lock();
+        try {
+            user user = userMapper.findByUsername(username);
+            if (user == null) {
+                logger.error("User {} does not exist, cannot cancel order {}", username, orderId);
+                throw new RuntimeException("User does not exist");
             }
-            throw new RuntimeException("Order cannot be cancelled");
-        }
 
-        // Call bank service for refund
-        boolean refundSuccess = processRefund(order);
+            order order = orderMapper.findById(orderId);
+            if (order == null) {
+                logger.error("Order ID {} does not exist", orderId);
+                throw new RuntimeException("Order does not exist");
+            }
 
-        if (refundSuccess) {
-            // Update order status
-            orderMapper.updateOrderStatus(order.getId(), "Cancelled");
-            logger.debug("Order ID {} has been cancelled", order.getId());
+            if (!order.getUserId().equals(user.getId())) {
+                logger.warn("User {} attempted to cancel order {} that does not belong to them", username, orderId);
+                throw new RuntimeException("Cannot cancel an order that does not belong to you");
+            }
 
-            // Restore inventory
-            List<orderitem> items = orderItemMapper.findByOrderId(order.getId());
-            for (orderitem item : items) {
-                Long warehouseId = item.getWarehouseId();
-                inventory inventory = inventoryMapper.findByWarehouseAndProduct(warehouseId, item.getProductId());
-                if (inventory != null) {
-                    inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
-                    inventoryMapper.updateInventory(inventory);
-                    logger.debug("Restored {} items to warehouse ID {}, current inventory: {}", item.getQuantity(), warehouseId, inventory.getQuantity());
+            if (!"paid".equals(order.getStatus())) {
+                logger.warn("Order ID {} status is {}, cannot be cancelled", orderId, order.getStatus());
+                // Send email notification
+                try {
+                    Map<String, String> emailRequest = new HashMap<>();
+                    emailRequest.put("recipient", user.getEmail());
+                    emailRequest.put("subject", "Order Cannot Be Cancelled");
+                    emailRequest.put("message", "Sorry, the order cannot be cancelled. Please check the order status.");
+
+                    String emailApiUrl = emailServiceUrl + "/emails/send";
+                    restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
+                    logger.debug("Sent order cannot be cancelled email to {}", user.getEmail());
+                } catch (Exception e) {
+                    logger.error("Failed to send email: {}", e.getMessage());
                 }
+                throw new RuntimeException("Order cannot be cancelled");
             }
 
-            // Send email notification
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "Order Cancelled");
-                emailRequest.put("message", "Your order has been cancelled. The refund will be returned to your account.");
+            // Call bank service for refund
+            boolean refundSuccess = processRefund(order);
 
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("Sent order cancelled email to {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("Failed to send email: {}", e.getMessage());
-            }
-        } else {
-            // Refund failed, handle exception
-            logger.error("Order ID {} refund failed", orderId);
-            // Send email notification
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "Order Cancellation Failed");
-                emailRequest.put("message", "Sorry, order cancellation failed. Please contact customer service.");
+            if (refundSuccess) {
+                // Update order status
+                orderMapper.updateOrderStatus(order.getId(), "Cancelled");
+                logger.debug("Order ID {} has been cancelled", order.getId());
 
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("Sent order cancellation failed email to {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("Failed to send email: {}", e.getMessage());
+                // Restore inventory
+                List<orderitem> items = orderItemMapper.findByOrderId(order.getId());
+                for (orderitem item : items) {
+                    Long warehouseId = item.getWarehouseId();
+                    inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouseId, item.getProductId());
+                    if (inventory != null) {
+                        inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
+                        inventoryMapper.updateInventory(inventory);
+                        logger.debug("Restored {} items to warehouse ID {}, current inventory: {}", item.getQuantity(), warehouseId, inventory.getQuantity());
+                    }
+                }
+
+                // Send email notification
+                try {
+                    Map<String, String> emailRequest = new HashMap<>();
+                    emailRequest.put("recipient", user.getEmail());
+                    emailRequest.put("subject", "Order Cancelled");
+                    emailRequest.put("message", "Your order has been cancelled. The refund will be returned to your account.");
+
+                    String emailApiUrl = emailServiceUrl + "/emails/send";
+                    restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
+                    logger.debug("Sent order cancelled email to {}", user.getEmail());
+                } catch (Exception e) {
+                    logger.error("Failed to send email: {}", e.getMessage());
+                }
+            } else {
+                // Refund failed, handle exception
+                logger.error("Order ID {} refund failed", orderId);
+                // Send email notification
+                try {
+                    Map<String, String> emailRequest = new HashMap<>();
+                    emailRequest.put("recipient", user.getEmail());
+                    emailRequest.put("subject", "Order Cancellation Failed");
+                    emailRequest.put("message", "Sorry, order cancellation failed. Please contact customer service.");
+
+                    String emailApiUrl = emailServiceUrl + "/emails/send";
+                    restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
+                    logger.debug("Sent order cancellation failed email to {}", user.getEmail());
+                } catch (Exception e) {
+                    logger.error("Failed to send email: {}", e.getMessage());
+                }
+                throw new RuntimeException("Refund failed");
             }
-            throw new RuntimeException("Refund failed");
+        } finally {
+            writeLock.unlock();
         }
     }
+
 
     // New method: Call bank service for refund
     private boolean processRefund(order order) {

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
@@ -184,7 +185,6 @@
   <div class="actions">
     <a th:href="@{/products}" class="link">Back to Product List</a>
     <form th:action="@{/logout}" method="post">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
       <button type="submit" class="btn">Log Out</button>
     </form>
   </div>

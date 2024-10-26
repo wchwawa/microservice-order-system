@@ -12,6 +12,10 @@ public interface accountmapper {
     @Select("SELECT * FROM accounts WHERE account_id = #{accountId}")
     account findAccountByAccountId(@Param("accountId") String accountId);
 
+    // 添加带锁的查询方法
+    @Select("SELECT * FROM accounts WHERE account_id = #{accountId} FOR UPDATE")
+    account findAccountByAccountIdWithLock(@Param("accountId") String accountId);
+
     @Update("UPDATE accounts SET balance = #{balance} WHERE account_id = #{accountId}")
     void updateAccountBalance(@Param("accountId") String accountId, @Param("balance") java.math.BigDecimal balance);
 }
