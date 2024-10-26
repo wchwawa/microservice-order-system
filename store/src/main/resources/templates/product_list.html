@@ -4,6 +4,10 @@
   <title>Product List | Your App Name</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -147,10 +151,6 @@
   </div>
 
   <div class="action-buttons">
-    <a th:href="@{/inventory}">
-      <button class="btn btn-primary">View Inventory</button>
-    </a>
-
     <a th:href="@{/orders}">
       <button class="btn btn-blue">My Orders</button>
     </a>

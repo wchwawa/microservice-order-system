@@ -8,6 +8,7 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,20 +33,25 @@ public class websecurityconfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, userservice userService) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .authenticationProvider(authenticationProvider(userService))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(form -> form
-                        .loginPage("/login")
-                        .failureUrl("/login?error")
-                        .defaultSuccessUrl("/products")
-                        .permitAll()
-                )
-                .logout(LogoutConfigurer::permitAll);
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**", "/inventory/**")  // 忽略 API 路径的 CSRF 保护
+            )
+            .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/api/**", "/inventory/**").permitAll()  // 允许 API 访问
+                .anyRequest().authenticated()
+            )
+            .formLogin(form -> form
+                .loginPage("/login")
+                .defaultSuccessUrl("/products", true)  // 登录成功后跳转到产品页面
+                .permitAll()
+            )
+            .logout(logout -> logout
+                .logoutSuccessUrl("/login")
+                .permitAll()
+            );
 
         return http.build();
     }

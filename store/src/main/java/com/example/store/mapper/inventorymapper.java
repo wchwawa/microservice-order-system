@@ -21,14 +21,14 @@ public interface inventorymapper {
     @Delete("DELETE FROM inventory WHERE id = #{id}")
     void deleteInventory(@Param("id") Long id);
 
-    @Select("SELECT * FROM inventory WHERE warehouse_id = #{warehouseId} AND product_id = #{productId}")
+    @Select("SELECT * FROM inventory WHERE warehouse_id = #{warehouseId} AND product_id = #{productId} FOR UPDATE")
     @Results({
             @Result(column = "id", property = "id"),
             @Result(column = "warehouse_id", property = "warehouseId"),
             @Result(column = "product_id", property = "productId"),
             @Result(column = "quantity", property = "quantity")
     })
-    inventory findByWarehouseAndProduct(@Param("warehouseId") Long warehouseId, @Param("productId") Long productId);
+    inventory findByWarehouseAndProductWithLock(@Param("warehouseId") Long warehouseId, @Param("productId") Long productId);
 
     @Update("UPDATE inventory SET quantity = #{quantity} WHERE warehouse_id = #{warehouseId} AND product_id = #{productId}")
     void updateInventory(inventory inventory);
@@ -39,4 +39,3 @@ public interface inventorymapper {
             "JOIN products p ON i.product_id = p.id")
     List<inventory> findAllInventory();
 }
-

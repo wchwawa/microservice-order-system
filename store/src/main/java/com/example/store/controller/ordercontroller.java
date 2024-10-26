@@ -8,16 +8,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 @Controller
 public class ordercontroller {
-
     @Autowired
     private orderservice orderService;
 
     @PostMapping("/orders")
     public String createOrder(@RequestParam Long productId, @RequestParam int quantity, Model model, RedirectAttributes redirectAttributes) {
+
         try {
             String username = getCurrentUsername();
             orderService.createorder(username, productId, quantity);
@@ -25,6 +27,9 @@ public class ordercontroller {
             return "redirect:/ordersuccess";
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/orderfailure";
+        } catch (InterruptedException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "order creation failed due to an internal error.");
             return "redirect:/orderfailure";
         }
     }
