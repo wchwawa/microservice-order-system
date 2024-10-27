@@ -1,6 +1,7 @@
 package com.example.store.service;
 
 import com.example.store.entity.*;
+import com.example.store.grpc.PaymentGrpcClient;
 import com.example.store.mapper.*;
 import com.example.store.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,9 @@ public class orderservice {
     // 添加 RestTemplate，用于调用外部服务
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private PaymentGrpcClient paymentGrpcClient;
 
     // 从配置文件中获取外部服务的 URL
     @Value("${bank.service.url}")
@@ -232,8 +236,14 @@ public class orderservice {
         paymentRequest.setStoreAccountId(STORE_ACCOUNT_ID);
 
         try {
-            // Call bank service payment interface
-            paymentresponse paymentResponse = restTemplate.postForObject(bankServiceUrl, paymentRequest, paymentresponse.class);
+            // Call bank service payment interface by grpc
+            paymentresponse paymentResponse = paymentGrpcClient.processPayment(
+                    order.getId().toString(),
+                    CUSTOMER_ACCOUNT_ID,
+                    STORE_ACCOUNT_ID,
+                    BigDecimal.valueOf(order.getTotalAmount()),
+                    "CNY"
+            );
 
             if (paymentResponse != null && "SUCCESS".equals(paymentResponse.getStatus())) {
                 logger.info("Order ID {} payment successful, transaction ID {}", order.getId(), paymentResponse.getTransactionId());
@@ -362,8 +372,14 @@ public class orderservice {
         refundRequest.setStoreAccountId(STORE_ACCOUNT_ID);
 
         try {
-            // refund api
-            paymentresponse refundResponse = restTemplate.postForObject(bankServiceUrl + "/refund", refundRequest, paymentresponse.class);
+            // refund api to bank service by grpc
+            paymentresponse refundResponse = paymentGrpcClient.processRefund(
+                    order.getId().toString(),
+                    CUSTOMER_ACCOUNT_ID,
+                    STORE_ACCOUNT_ID,
+                    BigDecimal.valueOf(order.getTotalAmount()),
+                    "CNY"
+            );
 
             if (refundResponse != null && "SUCCESS".equals(refundResponse.getStatus())) {
                 logger.info("Order ID {} refund successful, transaction ID {}", order.getId(), refundResponse.getTransactionId());
