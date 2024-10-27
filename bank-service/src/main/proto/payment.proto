@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.example.bankservice.grpc";
+option java_outer_classname = "PaymentProto";
+
+package payment;
+
+service PaymentService {
+  rpc ProcessPayment (PaymentRequest) returns (PaymentResponse) {}
+  rpc ProcessRefund (PaymentRequest) returns (PaymentResponse) {}
+}
+
+message PaymentRequest {
+  string order_id = 1;
+  string customer_account_id = 2;
+  string store_account_id = 3;
+  double amount = 4;
+  string currency = 5;
+}
+
+message PaymentResponse {
+  string status = 1;
+  string transaction_id = 2;
+  string message = 3;
+}
