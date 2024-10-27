@@ -39,8 +39,8 @@ public class websecurityconfig {
                 .ignoringRequestMatchers("/api/**", "/inventory/**")  // 忽略 API 路径的 CSRF 保护
             )
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
-                .requestMatchers("/api/**", "/inventory/**", "/products").permitAll()  // 允许 API 访问
+                .requestMatchers("/login", "/register", "/css/**", "/js/**", "/api/accounts/**").permitAll()
+                .requestMatchers("/api/**", "/inventory/**").permitAll()  // 允许 API 访问
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

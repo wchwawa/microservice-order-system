@@ -18,4 +18,7 @@ public interface accountmapper {
 
     @Update("UPDATE accounts SET balance = #{balance} WHERE account_id = #{accountId}")
     void updateAccountBalance(@Param("accountId") String accountId, @Param("balance") java.math.BigDecimal balance);
+
+    @Select("SELECT * FROM accounts WHERE username = #{username}")
+    account findAccountByUsername(@Param("username") String username);
 }
