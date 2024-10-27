@@ -40,7 +40,7 @@ public class websecurityconfig {
             )
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/login", "/register", "/css/**", "/js/**").permitAll()
-                .requestMatchers("/api/**", "/inventory/**").permitAll()  // 允许 API 访问
+                .requestMatchers("/api/**", "/inventory/**", "/products").permitAll()  // 允许 API 访问
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

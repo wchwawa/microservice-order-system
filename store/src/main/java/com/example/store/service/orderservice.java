@@ -2,32 +2,24 @@ package com.example.store.service;
 
 import com.example.store.entity.*;
 import com.example.store.mapper.*;
-import com.example.store.model.*;
+import com.example.store.model.paymentrequest;
+import com.example.store.model.paymentresponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.sql.Time;
-import java.util.*;
 import java.math.BigDecimal;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-// 导入所需的类
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.client.RestTemplate;
-
-
-
 @Service
 public class orderservice {
-    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
-    private final Lock readLock = rwLock.readLock();
-    private final Lock writeLock = rwLock.writeLock();
+
     private static final Logger logger = LoggerFactory.getLogger(orderservice.class);
 
     @Autowired
@@ -66,10 +58,13 @@ public class orderservice {
     private static final String CUSTOMER_ACCOUNT_ID = "customer_account_001";
     private static final String STORE_ACCOUNT_ID = "store_account_001";
 
+    private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private final Lock readLock = rwLock.readLock();
+    private final Lock writeLock = rwLock.writeLock();
+
     @Transactional
     public void createorder(String username, Long productId, int quantity) throws InterruptedException {
         // 获取用户信息
-        writeLock.lock();
         user user = userMapper.findByUsername(username);
         if (user == null) {
             logger.error("user {} not exist", username);
@@ -140,8 +135,9 @@ public class orderservice {
         order order = new order();
         order.setUserId(user.getId());
         order.setTotalAmount(totalAmount);
-        order.setStatus("Pending Payment"); // 初始状态为待支付
+        order.setStatus("waiting for payment");
         orderMapper.insertOrder(order);
+        logger.debug("Create order. ID：{}", order.getId());
 
         for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
             warehouse warehouse = entry.getKey();
@@ -224,23 +220,13 @@ public class orderservice {
                 logger.debug("failed to send order-failed email {}", user.getEmail());
             } catch (Exception e) {
                 logger.error("failed to send eamil：{}", e.getMessage());
-            } finally {
-                writeLock.unlock();
             }
             throw new RuntimeException("payment failed");
         }
     }
 
 
-    @Async
-    public boolean processPayment(order order, double totalAmount) {
-        try {
-            Thread.sleep(5000); // 5秒延迟
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("payment process is interrupted：{}", e.getMessage());
-            return false;
-        }
+    private boolean processPayment(order order, double totalAmount) {
         // Create payment request
         paymentrequest paymentRequest = new paymentrequest();
         paymentRequest.setOrderId(order.getId().toString());
