@@ -5,6 +5,7 @@ import com.example.store.service.productservice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,14 +40,16 @@ public class productcontroller {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<product> deleteProduct(@PathVariable Long id) {
         try {
+            product p = productService.getProductById(id);
             productService.deleteProduct(id);
-            logger.info("Deleted product: {}", id);
-            return ResponseEntity.ok().build();
+
+            logger.info("Deleted p: {}", id);
+            return ResponseEntity.ok(p);
         } catch (Exception e) {
             logger.error("Failed to delete product: {}", e.getMessage());
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
