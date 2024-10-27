@@ -135,9 +135,36 @@
     .btn-blue:hover {
       background-color: #2980b9;
     }
+    .nav-buttons {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.nav-btn {
+    background-color: #3498db;
+    color: white !important;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.nav-btn:hover {
+    background-color: #2980b9;
+    text-decoration: none;
+}
+
   </style>
 </head>
-<body>
+<div class="nav-buttons">
+  <a th:href="@{/dashboard}" class="nav-btn">My Dashboard</a>
+</div>
 <div class="container">
   <h1>Our Products</h1>
   <div class="product-list">

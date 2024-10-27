@@ -70,177 +70,159 @@ public class orderservice {
     public void createorder(String username, Long productId, int quantity) throws InterruptedException {
         // 获取用户信息
         writeLock.lock();
-        user user = userMapper.findByUsername(username);
-        if (user == null) {
-            logger.error("user {} not exist", username);
-            throw new RuntimeException("user not exist");
-        }
+        try {
 
-        // 获取商品信息
-        product product = productMapper.findById(productId);
-        if (product == null) {
-            logger.error("Item ID {} not exist", productId);
-            throw new RuntimeException("Item not exist");
-        }
+            user user = userMapper.findByUsername(username);
+            if (user == null) {
+                logger.error("user {} not exist", username);
+                throw new RuntimeException("user not exist");
+            }
 
-        // 查找所有仓库的库存
-        List<warehouse> warehouses = warehouseMapper.findAll();
-        Map<warehouse, Integer> warehouseAllocation = new LinkedHashMap<>();
-        int remainingQuantity = quantity;
+            // 获取商品信息
+            product product = productMapper.findById(productId);
+            if (product == null) {
+                logger.error("Item ID {} not exist", productId);
+                throw new RuntimeException("Item not exist");
+            }
 
-        // 遍历仓库，分配库存
-        for (warehouse warehouse : warehouses) {
-            inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
-            if (inventory != null && inventory.getQuantity() > 0) {
-                int availableQuantity = inventory.getQuantity();
-                if (availableQuantity >= remainingQuantity) {
-                    warehouseAllocation.put(warehouse, remainingQuantity);
-                    remainingQuantity = 0;
-                    break;
-                } else {
-                    warehouseAllocation.put(warehouse, availableQuantity);
-                    remainingQuantity -= availableQuantity;
+            // 查找所有仓库的库存
+            List<warehouse> warehouses = warehouseMapper.findAll();
+            Map<warehouse, Integer> warehouseAllocation = new LinkedHashMap<>();
+            int remainingQuantity = quantity;
+
+            // 遍历仓库，分配库存
+            for (warehouse warehouse : warehouses) {
+                inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
+                if (inventory != null && inventory.getQuantity() > 0) {
+                    int availableQuantity = inventory.getQuantity();
+                    if (availableQuantity >= remainingQuantity) {
+                        warehouseAllocation.put(warehouse, remainingQuantity);
+                        remainingQuantity = 0;
+                        break;
+                    } else {
+                        warehouseAllocation.put(warehouse, availableQuantity);
+                        remainingQuantity -= availableQuantity;
+                    }
                 }
             }
-        }
 
-        if (remainingQuantity > 0) {
-            // 总库存不足，处理缺货情况
-            logger.warn("Product ID {} is out of stock, requested quantity: {}, total available stock: {}", productId, quantity, quantity - remainingQuantity);
-            // 发送邮件通知
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "Order Failed");
-                emailRequest.put("message", "Sorry, the product is out of stock and we cannot complete your order.");
-
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("Sent out-of-stock email to {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("failed to sending order：{}", e.getMessage());
-            }
-            throw new RuntimeException("Out of stock");
-        }
-
-        // 更新库存
-        for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
-            warehouse warehouse = entry.getKey();
-            int allocatedQuantity = entry.getValue();
-            inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
-            inventory.setQuantity(inventory.getQuantity() - allocatedQuantity);
-            inventoryMapper.updateInventory(inventory);
-            logger.debug("Allocated {} items from warehouse {}, remaining stock: {}", allocatedQuantity, warehouse.getName(), inventory.getQuantity());
-        }
-
-        // 计算总价
-        double totalAmount = product.getPrice() * quantity;
-
-        // 创建订单
-        order order = new order();
-        order.setUserId(user.getId());
-        order.setTotalAmount(totalAmount);
-        order.setStatus("Pending Payment"); // 初始状态为待支付
-        orderMapper.insertOrder(order);
-
-        for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
-            warehouse warehouse = entry.getKey();
-            int allocatedQuantity = entry.getValue();
-            orderitem item = new orderitem();
-            item.setOrderId(order.getId());
-            item.setProductId(productId);
-            item.setQuantity(allocatedQuantity);
-            item.setPrice(product.getPrice());
-            item.setWarehouseId(warehouse.getId());
-            orderItemMapper.insertOrderItem(item);
-            logger.debug("Create order ID：{}，warehouse ID：{}，quantity：{}", item.getId(), warehouse.getId(), allocatedQuantity);
-        }
-
-        boolean paymentSuccess = processPayment(order, totalAmount);
-
-        // payment success
-        if (paymentSuccess) {
-            // 更新订单状态
-            orderMapper.updateOrderStatus(order.getId(), "paid");
-            logger.debug("order ID {} has been paid", order.getId());
-
-            // 发送送货请求
-            for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
-                warehouse warehouse = entry.getKey();
-                int allocatedQuantity = entry.getValue();
+            if (remainingQuantity > 0) {
+                // 总库存不足，处理缺货情况
+                logger.warn("Product ID {} is out of stock, requested quantity: {}, total available stock: {}", productId, quantity, quantity - remainingQuantity);
+                // 发送邮件通知
                 try {
-                    Map<String, Object> deliveryRequest = new HashMap<>();
-                    deliveryRequest.put("orderId", order.getId().toString());
-                    deliveryRequest.put("customerEmail", user.getEmail());
-                    deliveryRequest.put("warehouseName", warehouse.getName());
-                    deliveryRequest.put("productName", product.getName());
-                    deliveryRequest.put("quantity", allocatedQuantity);
+                    Map<String, String> emailRequest = new HashMap<>();
+                    emailRequest.put("recipient", user.getEmail());
+                    emailRequest.put("subject", "Order Failed");
+                    emailRequest.put("message", "Sorry, the product is out of stock and we cannot complete your order.");
 
-                    String deliveryApiUrl = deliveryServiceUrl + "/deliveries/create";
-                    restTemplate.postForEntity(deliveryApiUrl, deliveryRequest, String.class);
-                    logger.debug("sending delivery request to warehouse {}，quantity：{}", warehouse.getName(), allocatedQuantity);
+                    String emailApiUrl = emailServiceUrl + "/emails/send";
+                    restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
+                    logger.debug("Sent out-of-stock email to {}", user.getEmail());
                 } catch (Exception e) {
-                    logger.error("delivery request sending failed：{}", e.getMessage());
+                    logger.error("failed to sending order：{}", e.getMessage());
                 }
+                throw new RuntimeException("Out of stock");
             }
 
-            // 发送邮件通知
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "order paid");
-                emailRequest.put("message", "your order has been paid successfully, we will deliver it soon.");
-
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("sending order has been paid email to {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("fail to send email：{}", e.getMessage());
-            }
-        } else {
-            // 支付失败，更新订单状态
-            orderMapper.updateOrderStatus(order.getId(), "fail to pay");
-            logger.warn("order ID {} payment failed", order.getId());
-
-            // 恢复库存
+            // 更新库存
             for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
                 warehouse warehouse = entry.getKey();
                 int allocatedQuantity = entry.getValue();
                 inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
-                inventory.setQuantity(inventory.getQuantity() + allocatedQuantity);
+                inventory.setQuantity(inventory.getQuantity() - allocatedQuantity);
                 inventoryMapper.updateInventory(inventory);
-                logger.debug("restore warehouse {} {} items，current inventory：{}", warehouse.getName(), allocatedQuantity, inventory.getQuantity());
+                logger.debug("Allocated {} items from warehouse {}, remaining stock: {}", allocatedQuantity, warehouse.getName(), inventory.getQuantity());
             }
 
-            // 发送邮件通知
-            try {
-                Map<String, String> emailRequest = new HashMap<>();
-                emailRequest.put("recipient", user.getEmail());
-                emailRequest.put("subject", "paid failed");
-                emailRequest.put("message", "sorry, your order payment failed, please try again.");
+            // 计算总价
+            double totalAmount = product.getPrice() * quantity;
 
-                String emailApiUrl = emailServiceUrl + "/emails/send";
-                restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
-                logger.debug("failed to send order-failed email {}", user.getEmail());
-            } catch (Exception e) {
-                logger.error("failed to send eamil：{}", e.getMessage());
-            } finally {
-                writeLock.unlock();
+            // 创建订单
+            order order = new order();
+            order.setUserId(user.getId());
+            order.setTotalAmount(totalAmount);
+            order.setStatus("Pending Payment"); // 初始状态为待支付
+            orderMapper.insertOrder(order);
+
+            for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
+                warehouse warehouse = entry.getKey();
+                int allocatedQuantity = entry.getValue();
+                orderitem item = new orderitem();
+                item.setOrderId(order.getId());
+                item.setProductId(productId);
+                item.setQuantity(allocatedQuantity);
+                item.setPrice(product.getPrice());
+                item.setWarehouseId(warehouse.getId());
+                orderItemMapper.insertOrderItem(item);
+                logger.debug("Create order ID：{}，warehouse ID：{}，quantity：{}", item.getId(), warehouse.getId(), allocatedQuantity);
             }
-            throw new RuntimeException("payment failed");
+
+            boolean paymentSuccess = processPayment(order, totalAmount);
+
+            // payment success
+            if (paymentSuccess) {
+                // 更新订单状态
+                orderMapper.updateOrderStatus(order.getId(), "paid");
+                logger.debug("order ID {} has been paid", order.getId());
+
+                // 发送送货请求
+                for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
+                    warehouse warehouse = entry.getKey();
+                    int allocatedQuantity = entry.getValue();
+                    try {
+                        Map<String, Object> deliveryRequest = new HashMap<>();
+                        deliveryRequest.put("orderId", order.getId().toString());
+                        deliveryRequest.put("customerEmail", user.getEmail());
+                        deliveryRequest.put("warehouseName", warehouse.getName());
+                        deliveryRequest.put("productName", product.getName());
+                        deliveryRequest.put("quantity", allocatedQuantity);
+
+                        String deliveryApiUrl = deliveryServiceUrl + "/deliveries/create";
+                        restTemplate.postForEntity(deliveryApiUrl, deliveryRequest, String.class);
+                        logger.debug("sending delivery request to warehouse {}，quantity：{}", warehouse.getName(), allocatedQuantity);
+                    } catch (Exception e) {
+                        logger.error("delivery request sending failed：{}", e.getMessage());
+                    }
+                }
+
+                // 发送邮件通知
+                try {
+                    Map<String, String> emailRequest = new HashMap<>();
+                    emailRequest.put("recipient", user.getEmail());
+                    emailRequest.put("subject", "order paid");
+                    emailRequest.put("message", "your order has been paid successfully, we will deliver it soon.");
+
+                    String emailApiUrl = emailServiceUrl + "/emails/send";
+                    restTemplate.postForEntity(emailApiUrl, emailRequest, String.class);
+                    logger.debug("sending order has been paid email to {}", user.getEmail());
+                } catch (Exception e) {
+                    logger.error("fail to send email：{}", e.getMessage());
+                }
+            } else {
+                // 12. 支付失败处理
+                orderMapper.updateOrderStatus(order.getId(), "payment_failed");
+                logger.warn("Order {} payment failed", order.getId());
+
+                // 13. 恢复库存
+                for (Map.Entry<warehouse, Integer> entry : warehouseAllocation.entrySet()) {
+                    warehouse warehouse = entry.getKey();
+                    int allocatedQuantity = entry.getValue();
+                    inventory inventory = inventoryMapper.findByWarehouseAndProductWithLock(warehouse.getId(), productId);
+                    inventory.setQuantity(inventory.getQuantity() + allocatedQuantity);
+                    inventoryMapper.updateInventory(inventory);
+                    logger.debug("Restored {} items to warehouse {}", allocatedQuantity, warehouse.getName());
+                }
+
+                throw new RuntimeException("Payment failed");
+            }
+        } finally {
+            writeLock.unlock();
         }
     }
 
 
-    @Async
     public boolean processPayment(order order, double totalAmount) {
-        try {
-            Thread.sleep(5000); // 5秒延迟
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("payment process is interrupted：{}", e.getMessage());
-            return false;
-        }
         // Create payment request
         paymentrequest paymentRequest = new paymentrequest();
         paymentRequest.setOrderId(order.getId().toString());
