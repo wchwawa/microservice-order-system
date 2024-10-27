@@ -18,4 +18,9 @@ public interface productmapper {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insertProduct(product product);
 
+    @Update("UPDATE products SET name = #{name}, description = #{description}, price = #{price} WHERE id = #{id}")
+    void updateProduct(product product);
+
+    @Delete("DELETE FROM products WHERE id = #{id}")
+    void deleteProduct(@Param("id") Long id);
 }
