@@ -3,11 +3,157 @@
 <head>
     <title>User Dashboard</title>
     <link rel="stylesheet" th:href="@{/style.css}" />
+    <style>
+        /* General Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #fff;
+            padding: 2em;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a90e2;
+            font-size: 2em;
+            margin-bottom: 1em;
+        }
+
+        .dashboard-section, .deposit-section {
+            margin-bottom: 2em;
+            padding: 1em;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .balance {
+            font-size: 2.5em;
+            color: #4a90e2;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-top: 1em;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 0.5em;
+            color: #666;
+        }
+
+        .form-control {
+            padding: 0.5em;
+            font-size: 1em;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+
+        .btn {
+            padding: 0.7em 1.5em;
+            font-size: 1em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #4a90e2;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #3a7cbd;
+        }
+
+        .alert {
+            padding: 1em;
+            margin-top: 1em;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #e0f4e0;
+            color: #2e7d32;
+        }
+
+        .alert-danger {
+            background-color: #fdecea;
+            color: #d32f2f;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1em;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .link {
+            color: #4a90e2;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .link:hover {
+            color: #3a7cbd;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            background-color: #f9f9f9;
+            padding: 1em;
+            border-radius: 4px;
+            margin-bottom: 0.5em;
+            box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        ul li p {
+            margin: 0.5em 0;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
     <h1>My Dashboard</h1>
-    
+
     <div class="dashboard-section">
         <h2>Account Balance</h2>
         <p class="balance">$<span th:text="${#numbers.formatDecimal(dashboard.accountBalance, 1, 2)}">0.00</span></p>
@@ -32,7 +178,7 @@
 
     <div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
     <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-    
+
     <div class="dashboard-section">
         <h2>Recent Deliveries</h2>
         <ul>
@@ -46,8 +192,8 @@
 
     <div class="actions">
         <a th:href="@{/products}" class="link">Back to Product List</a>
-        <form th:action="@{/logout}" method="post">
-            <button type="submit" class="btn">Log Out</button>
+        <form th:action="@{/logout}" method="post" style="display: inline;">
+            <button type="submit" class="btn btn-primary">Log Out</button>
         </form>
     </div>
 </div>
