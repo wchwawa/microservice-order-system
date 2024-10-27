@@ -16,6 +16,4 @@ public class OrderStatusListener {
         LOGGER.info(message);
     }
 
-    //持久化
-
 }

@@ -56,4 +56,3 @@ CREATE TABLE `transactions` (
 
 -- ----------------------------
 -- Records of transactions
--- -------------------------
