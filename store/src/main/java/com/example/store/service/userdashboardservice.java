@@ -1,10 +1,10 @@
 package com.example.store.service;
 
-import com.example.bankservice.model.account;
 import com.example.store.entity.order;
 import com.example.store.entity.user;
 import com.example.store.mapper.ordermapper;
 import com.example.store.mapper.usermapper;
+import com.example.store.model.accountDTO;
 import com.example.store.model.deliveryinfo;
 import com.example.store.model.userdashboardinfo;
 import org.slf4j.Logger;
@@ -52,9 +52,9 @@ public class userdashboardservice {
 
         String bankApiUrl = bankServiceUrl + "/user/" + username;
         try {
-            ResponseEntity<account> accountResponse = restTemplate.getForEntity(
+            ResponseEntity<accountDTO> accountResponse = restTemplate.getForEntity(
                     bankApiUrl,
-                    account.class
+                    accountDTO.class
             );
             if (accountResponse.getStatusCode() == HttpStatus.OK) {
                 dashboard.setAccountBalance(Objects.requireNonNull(accountResponse.getBody()).getBalance());
@@ -76,10 +76,10 @@ public class userdashboardservice {
             Map<String, BigDecimal> request = new HashMap<>();
             request.put("amount", amount);
 
-            ResponseEntity<account> response = restTemplate.postForEntity(
+            ResponseEntity<accountDTO> response = restTemplate.postForEntity(
                     depositUrl,
                     request,
-                    account.class
+                    accountDTO.class
             );
 
             return response.getStatusCode() == HttpStatus.OK;
