@@ -1,14 +1,18 @@
 package com.example.bankservice.grpc;
 
-import com.example.bankservice.service.paymentservice;
 import com.example.bankservice.model.paymentrequest;
+import com.example.bankservice.service.paymentservice;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 
 @GrpcService
 public class PaymentGrpcService extends PaymentServiceGrpc.PaymentServiceImplBase {
-    
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentGrpcService.class);
     private final paymentservice paymentService;
 
     public PaymentGrpcService(paymentservice paymentService) {
