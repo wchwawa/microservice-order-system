@@ -1,8 +1,5 @@
 package com.example.store.grpc;
 
-import com.example.bankservice.grpc.PaymentRequest;
-import com.example.bankservice.grpc.PaymentResponse;
-import com.example.bankservice.grpc.PaymentServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
